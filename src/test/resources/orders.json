@@ -1,0 +1,21 @@
+[
+  {
+    "id": "ZAM1",
+    "value": "200.00",
+    "promotions": ["SuperKarta", "MegaBank"]
+  },
+  {
+    "id": "ZAM2",
+    "value": "150.00",
+    "promotions": ["MegaBank"]
+  },
+  {
+    "id": "ZAM3",
+    "value": "80.00"
+  },
+  {
+    "id": "ZAM4",
+    "value": "120.00",
+    "promotions": ["SuperKarta"]
+  }
+]

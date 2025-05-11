@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pl"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PaymentMethod.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ExpenseOptimizer</a> &gt; <a href="index.source.html" class="el_package">ocado.model</a> &gt; <span class="el_source">PaymentMethod.java</span></div><h1>PaymentMethod.java</h1><pre class="source lang-java linenums">package ocado.model;
+
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Klasa reprezentująca metodę płatności.
+ */
+@Getter
+@Setter
+public class PaymentMethod {
+    /** Unikalny identyfikator metody płatności */
+    private String id;
+
+    /** Wartość rabatu w procentach */
+    private int discount;
+
+    /** Dostępny limit płatności */
+    private double limit;
+
+    /** Liczba nieprzetworzonych jeszcze zamówień, dla których metoda może być użyta jako promocja */
+    private int ordersAmount;
+
+    /** Łączna kwota wydana tą metodą płatności */
+    private double spending;
+
+    /**
+     * Domyślny konstruktor tworzący obiekt klasy.
+     */
+<span class="fc" id="L30">    public PaymentMethod() {}</span>
+
+    /**
+     * Konstruktor używany do utworzenia &quot;sztucznej&quot; metody płatności, gdy metoda PUNKTY nie została zdefiniowana.
+     * @param discount zniżka dla tworzonej metody
+     * @param limit limit dla tworzonej metody
+     */
+<span class="nc" id="L37">    public PaymentMethod(int discount, double limit) {</span>
+<span class="nc" id="L38">        this.discount = discount;</span>
+<span class="nc" id="L39">        this.limit = limit;</span>
+<span class="nc" id="L40">    }</span>
+
+    /**
+     * Zwiększa licznik zamówień, dla których metoda może być użyta jako promocja.
+     */
+    public void incrementOrdersAmount() {
+<span class="fc" id="L46">        ordersAmount++;</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Zmniejsza licznik zamówień, dla których metoda może być użyta jako promocja.
+     */
+    public void decrementOrdersAmount() {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (ordersAmount &gt; 0) {</span>
+<span class="fc" id="L54">            ordersAmount--;</span>
+        }
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Realizuje płatność określoną kwotą tą metodą płatności.
+     *
+     * @param amount kwota do zapłacenia
+     * @throws IllegalArgumentException rzucany, gdy kwota do wydania przekracza limit metody
+     */
+    public void spend(double amount) throws IllegalArgumentException {
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (amount &lt; 0) {</span>
+<span class="fc" id="L66">            throw new IllegalArgumentException(&quot;Kwota do wydania nie moze byc liczba ujemna!&quot;);</span>
+        }
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (amount &gt; limit) {</span>
+<span class="fc" id="L69">            throw new IllegalArgumentException(&quot;Kwota do wydania przekracza limit metody!&quot;);</span>
+        }
+<span class="fc" id="L71">        spending += amount;</span>
+<span class="fc" id="L72">        limit -= amount;</span>
+<span class="fc" id="L73">    }</span>
+
+    /**
+     * Zwraca do dostępnego limitu podaną kwotę płatności (cofa transakcję).
+     *
+     * @param amount kwota do zwrotu
+     * @throws IllegalArgumentException rzucany, gdy kwota do oddania przewyższa faktyczne wydatki
+     */
+    public void getMoneyBack(double amount) throws IllegalArgumentException {
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        if (amount &lt; 0) {</span>
+<span class="fc" id="L83">            throw new IllegalArgumentException(&quot;Kwota do oddania nie moze byc liczba ujemna!&quot;);</span>
+        }
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (amount &gt; spending) {</span>
+<span class="fc" id="L86">            throw new IllegalArgumentException(&quot;Kwota do oddania przewyzsza faktyczne wydatki!&quot;);</span>
+        }
+<span class="fc" id="L88">        spending -= amount;</span>
+<span class="fc" id="L89">        limit += amount;</span>
+<span class="fc" id="L90">    }</span>
+
+    /**
+     * Zwraca informację o wydatkach w formacie tekstowym.
+     *
+     * @return string w formacie &quot;id wydana_kwota&quot;
+     */
+    public String printSpending() {
+<span class="nc" id="L98">        return id + &quot; &quot; + spending;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

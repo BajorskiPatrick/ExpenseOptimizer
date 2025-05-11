@@ -1,0 +1,22 @@
+[
+  {
+    "id": "PUNKTY",
+    "discount": "20",
+    "limit": "150.00"
+  },
+  {
+    "id": "SuperKarta",
+    "discount": "10",
+    "limit": "250.00"
+  },
+  {
+    "id": "MegaBank",
+    "discount": "15",
+    "limit": "200.00"
+  },
+  {
+    "id": "ZwyklaKarta",
+    "discount": "0",
+    "limit": "1000.00"
+  }
+]

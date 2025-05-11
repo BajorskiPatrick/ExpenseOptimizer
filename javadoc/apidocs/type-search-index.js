@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"ocado.optimization","l":"ExpenseOptimizer"},{"p":"ocado.utils","l":"JsonProcessor"},{"p":"ocado","l":"Main"},{"p":"ocado.utils","l":"OptimizerUtils"},{"p":"ocado.model","l":"Order"},{"p":"ocado.model","l":"PaymentMethod"}];updateSearchResults();
