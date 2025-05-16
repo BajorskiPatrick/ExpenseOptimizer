@@ -1,22 +1,26 @@
 package ocado.model;
 
 import org.junit.jupiter.api.*;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ModelTest {
     @Test
     void testOrderUsePaymentMethod() {
-        Order order = new Order();
+        Order order = new Order("", "", new ArrayList<>());
         assertTrue(order.getUsedPaymentsMethods().isEmpty());
 
-        order.usePaymentsMethod("test", 1.0);
+        order.usePaymentsMethod("test", new BigDecimal("1.00"));
         assertTrue(order.getUsedPaymentsMethods().containsKey("test"));
-        assertEquals(1.0, order.getUsedPaymentsMethods().get("test"));
+        assertEquals(new BigDecimal("1.00"), order.getUsedPaymentsMethods().get("test"));
     }
 
     @Test
     void testPaymentMethodIncrementOrdersAmount() {
-        PaymentMethod paymentMethod = new PaymentMethod();
+        PaymentMethod paymentMethod = new PaymentMethod("", "", "");
         assertEquals(0, paymentMethod.getOrdersAmount());
 
         paymentMethod.incrementOrdersAmount();
@@ -25,7 +29,7 @@ class ModelTest {
 
     @Test
     void testPaymentMethodDecrementOrdersAmount() {
-        PaymentMethod paymentMethod = new PaymentMethod();
+        PaymentMethod paymentMethod = new PaymentMethod("", "", "");
         assertEquals(0, paymentMethod.getOrdersAmount());
 
         paymentMethod.decrementOrdersAmount();
@@ -38,35 +42,35 @@ class ModelTest {
 
     @Test
     void testPaymentMethodCorrectSpend() {
-        PaymentMethod paymentMethod = new PaymentMethod();
-        paymentMethod.setLimit(20);
-        paymentMethod.spend(10);
-        assertEquals(10, paymentMethod.getLimit());
-        assertEquals(10, paymentMethod.getSpending());
+        PaymentMethod paymentMethod = new PaymentMethod("", "", "");
+        paymentMethod.setLimit(new BigDecimal("20.00"));
+        paymentMethod.spend(new BigDecimal("10.00"));
+        assertEquals(new BigDecimal("10.00"), paymentMethod.getLimit());
+        assertEquals(new BigDecimal("10.00"), paymentMethod.getSpending());
     }
 
     @Test
     void testPaymentMethodSpendWrongAmount() {
-        PaymentMethod paymentMethod = new PaymentMethod();
-        paymentMethod.setLimit(20);
-        assertThrows(IllegalArgumentException.class, () -> paymentMethod.spend(21));
-        assertThrows(IllegalArgumentException.class, () -> paymentMethod.spend(-1));
+        PaymentMethod paymentMethod = new PaymentMethod("", "", "");
+        paymentMethod.setLimit(new BigDecimal("20.00"));
+        assertThrows(IllegalArgumentException.class, () -> paymentMethod.spend(new BigDecimal("21.00")));
+        assertThrows(IllegalArgumentException.class, () -> paymentMethod.spend(new BigDecimal("-1.00")));
     }
 
     @Test
     void testPaymentMethodGetMoneyBack() {
-        PaymentMethod paymentMethod = new PaymentMethod();
-        paymentMethod.setSpending(20);
-        paymentMethod.getMoneyBack(10);
-        assertEquals(10, paymentMethod.getSpending());
-        assertEquals(10, paymentMethod.getLimit());
+        PaymentMethod paymentMethod = new PaymentMethod("", "", "");
+        paymentMethod.setSpending(new BigDecimal("20.00"));
+        paymentMethod.getMoneyBack(new BigDecimal("10.00"));
+        assertEquals(new BigDecimal("10.00"), paymentMethod.getSpending());
+        assertEquals(new BigDecimal("10.00"), paymentMethod.getLimit());
     }
 
     @Test
     void testPaymentMethodGetMoneyBackWrongAmount() {
-        PaymentMethod paymentMethod = new PaymentMethod();
-        paymentMethod.setSpending(20);
-        assertThrows(IllegalArgumentException.class, () -> paymentMethod.getMoneyBack(-1));
-        assertThrows(IllegalArgumentException.class, () -> paymentMethod.getMoneyBack(21));
+        PaymentMethod paymentMethod = new PaymentMethod("", "", "");
+        paymentMethod.setSpending(new BigDecimal("20.00"));
+        assertThrows(IllegalArgumentException.class, () -> paymentMethod.getMoneyBack(new BigDecimal("-1.00")));
+        assertThrows(IllegalArgumentException.class, () -> paymentMethod.getMoneyBack(new BigDecimal("21.00")));
     }
 }

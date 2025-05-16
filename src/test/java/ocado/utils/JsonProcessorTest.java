@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,7 @@ class JsonProcessorTest {
         List<Order> order = JsonProcessor.getOrdersAsList(file);
         assertEquals(1, order.size());
         assertEquals("ZAM1", order.getFirst().getId());
-        assertEquals(200.0, order.getFirst().getValue());
+        assertEquals(new BigDecimal("200.00"), order.getFirst().getValue());
 
         List<String> promotions = order.getFirst().getPromotions();
         assertEquals(2, promotions.size());
@@ -48,7 +49,7 @@ class JsonProcessorTest {
     }
 
     @Test
-    void testGetPaymentsAsMapWhenWrongFile() throws IOException {
+    void testGetPaymentsAsMapWhenWrongFile() {
         File fileOne = new File("src/test/resources/wrongpath.json");
         assertThrows(FileNotFoundException.class, () -> JsonProcessor.getPaymentsAsMap(fileOne, new ArrayList<>()));
 
@@ -80,9 +81,9 @@ class JsonProcessorTest {
 
         PaymentMethod paymentMethod = paymentMethods.get("SuperKarta");
         assertEquals("SuperKarta", paymentMethod.getId());
-        assertEquals(10, paymentMethod.getDiscount());
-        assertEquals(250.0, paymentMethod.getLimit());
+        assertEquals(new BigDecimal("10.00"), paymentMethod.getDiscount());
+        assertEquals(new BigDecimal("250.00"), paymentMethod.getLimit());
         assertEquals(1, paymentMethod.getOrdersAmount());
-        assertEquals(0.0, paymentMethod.getSpending());
+        assertEquals(new BigDecimal("0.00"), paymentMethod.getSpending());
     }
 }

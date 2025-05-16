@@ -36,7 +36,7 @@ public class Main {
             payments = JsonProcessor.getPaymentsAsMap(paymentsFile, orders);
             pointsMethod = payments.remove("PUNKTY");
             if (pointsMethod == null) {
-                pointsMethod = new PaymentMethod(-1, -1.0);
+                pointsMethod = new PaymentMethod("-1.00", "-1.00");
             }
         } catch (FileNotFoundException | IllegalArgumentException e) {
             System.err.println(e.getMessage());

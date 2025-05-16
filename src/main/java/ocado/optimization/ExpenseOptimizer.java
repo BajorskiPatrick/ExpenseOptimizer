@@ -4,6 +4,8 @@ import ocado.model.Order;
 import ocado.model.PaymentMethod;
 import ocado.utils.OptimizerUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -26,7 +28,7 @@ public class ExpenseOptimizer {
      * Konstruktor klasy ExpenseOptimizer.
      *
      * @param orders lista zamówień
-     * @param payments mapa metod płatności
+     * @param payments mapa {@link PaymentMethod}
      * @param pointsMethod metoda płatności punktowej
      */
     public ExpenseOptimizer(List<Order> orders, Map<String, PaymentMethod> payments, PaymentMethod pointsMethod) {
@@ -40,14 +42,14 @@ public class ExpenseOptimizer {
      *
      * @return true, jeśli optymalizacja zakończyła się sukcesem, false w przeciwnym wypadku
      * @throws IllegalArgumentException wyjątek rzucany z jednej z metod {@link OptimizerUtils#pay(PaymentMethod, Order)},
-     * {@link OptimizerUtils#pay(PaymentMethod, double)}, {@link #spentRemainingPoints()} i przekazywany dalej
+     * {@link OptimizerUtils#pay(PaymentMethod, BigDecimal)}, {@link #spentRemainingPoints()} i przekazywany dalej
      */
     public boolean optimize() throws IllegalArgumentException {
         orders.sort(Comparator.comparing(Order::getValue).reversed());
 
         boolean wasEverythingPaid = true;
         for (Order order : orders) {
-            double bestPromotion = 0;
+            BigDecimal bestPromotion = new BigDecimal("0.00");
             List<PaymentMethod> bestMethods = new ArrayList<>();
 
             // Znajdujemy maksymalną procentową zniżkę z tych, które mogą nam dać metody z listy promotions.
@@ -57,30 +59,30 @@ public class ExpenseOptimizer {
                 }
                 PaymentMethod pm = payments.get(s);
                 pm.decrementOrdersAmount();
-                if (pm.getLimit() >= order.getValue() && pm.getDiscount() > bestPromotion) {
+                if (pm.getLimit().compareTo(order.getValue()) >= 0 && pm.getDiscount().compareTo(bestPromotion) > 0) {
                     bestPromotion = pm.getDiscount();
                 }
             }
 
             // Jeśli płatność wszystkiego punktami jest możliwa, to wybieramy tę opcję. Jeśli nie, to rozpatrujemy
             // wszystkie metody, których zniżka równa najlepszej zniżce.
-            if (pointsMethod.getLimit() >= order.getValue()
-                    && pointsMethod.getDiscount() >= bestPromotion) {
+            if (pointsMethod.getLimit().compareTo(order.getValue()) >= 0
+                    && pointsMethod.getDiscount().compareTo(bestPromotion) >= 0) {
                 bestMethods.add(pointsMethod);
                 bestPromotion = pointsMethod.getDiscount();
             }
-            else if (bestPromotion > 0) {
+            else if (bestPromotion.compareTo(new BigDecimal("0.00")) > 0) {
                 for (String s : order.getPromotions()) {
                     if (!payments.containsKey(s)) {
                         continue;
                     }
-                    if (payments.get(s).getDiscount() == bestPromotion) {
+                    if (payments.get(s).getDiscount().compareTo(bestPromotion) == 0) {
                         bestMethods.add(payments.get(s));
                     }
                 }
             }
 
-            if (bestPromotion > 10) {
+            if (bestPromotion.compareTo(new BigDecimal("10.00")) > 0) {
                 if (bestMethods.size() == 1) {
                     // Brak remisu lub remis PUNKTY-KARTA.
                     utils.pay(bestMethods.getFirst(), order);
@@ -94,15 +96,17 @@ public class ExpenseOptimizer {
                 }
             }
             else {
-                double toPayByPoints = order.getValue() * 0.1; // Początkowo 10% zamówienia.
-                double toPayByCard = order.getValue() - toPayByPoints * 2; // Bo 10% z punktów, plus drugie tyle rabatu.
+                BigDecimal toPayByPoints = order.getValue().multiply(new BigDecimal("0.10").setScale(2, RoundingMode.HALF_UP)); // Początkowo 10% zamówienia.
+                BigDecimal toPayByCard = order.getValue().subtract(toPayByPoints.multiply(new BigDecimal("2.00")).setScale(2, RoundingMode.HALF_UP)).
+                        setScale(2, RoundingMode.HALF_UP); // Bo 10% z punktów, plus drugie tyle rabatu.
                 PaymentMethod pm;
 
-                if (toPayByPoints <= pointsMethod.getLimit()) {
+                if (toPayByPoints.compareTo(pointsMethod.getLimit()) <= 0) {
                     // Stosujemy płatność PUNKTY_10 i chcemy opłacić z punktów tylko 10% (resztę punktów zachować na później).
                     // Resztę zamówienia chcemy opłacić "najgorszą" możliwą kartą.
-                    double finalToPayByCard = toPayByCard;
-                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -> p.getLimit() >= finalToPayByCard).toList());
+                    BigDecimal finalToPayByCard = toPayByCard;
+
+                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -> p.getLimit().compareTo(finalToPayByCard) >= 0).toList());
 
                     if (pm == null) {
                         // Nie znaleźliśmy karty z limitem, który pozwoli opłacić punktami jedynie 10% - zatem szukamy
@@ -110,10 +114,11 @@ public class ExpenseOptimizer {
                         List<PaymentMethod> maxLimitCards = utils.findWithMaxLimit(payments.values().stream().toList());
                         pm = utils.findBestCardToPayRest(maxLimitCards);
 
-                        if (pm != null && order.getValue() - pm.getLimit() <= pointsMethod.getLimit()) {
+                        if (pm != null && order.getValue().subtract(pm.getLimit()).compareTo(pointsMethod.getLimit()) <= 0) {
                             // Wystarcza punktów na uzupełnienie do wybranej karty, więc płacimy.
                             toPayByCard = pm.getLimit();
-                            toPayByPoints = order.getValue() * 0.9 - toPayByCard;
+                            toPayByPoints = order.getValue().multiply(new BigDecimal("0.90")).setScale(2, RoundingMode.HALF_UP).
+                                    subtract(toPayByCard).setScale(2, RoundingMode.HALF_UP);
                         }
                         else {
                             // Doszliśmy do momentu, w którym nie jesteśmy w stanie dobrać żadnej metody płatności
@@ -142,7 +147,7 @@ public class ExpenseOptimizer {
                 else {
                     // Nie ma żadnej promocyjnej opcji płatności i PUNKTY_10 również nie mogą być zastosowane.
                     // Szukamy karty do opłacenia reszty (całego zamówienia) i ją stosujemy.
-                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -> p.getLimit() >= order.getValue()).toList());
+                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -> p.getLimit().compareTo(order.getValue()) >= 0).toList());
                     if (pm == null) {
                         // Również dochodzimy do momentu, w którym nie jesteśmy w stanie dobrać żadnej metody płatności
                         // do zamówienia, więc kończymy optymalizację :(.
@@ -157,7 +162,7 @@ public class ExpenseOptimizer {
 
         // Skończyliśmy główną pętlę algorytmu. Jeśli nie udało się w niej opłacić wszystkich zamówień lub wyczerpaliśmy
         // punkty -> po prostu zwracamy wynik działania algorytmu.
-        if (!wasEverythingPaid || pointsMethod.getLimit() == 0) {
+        if (!wasEverythingPaid || pointsMethod.getLimit().compareTo(new BigDecimal("0.00")) == 0) {
             return wasEverythingPaid;
         }
 
@@ -172,7 +177,7 @@ public class ExpenseOptimizer {
 
     /**
      * Metoda wydająca pozostałe punkty na zamówienia opłacone metodą PUNKTY_10.
-     * @throws IllegalArgumentException wyjątek rzucany z {@link PaymentMethod#getMoneyBack(double)} i przekazywany dalej
+     * @throws IllegalArgumentException wyjątek rzucany z {@link PaymentMethod#getMoneyBack(BigDecimal)} i przekazywany dalej
      */
     private void spentRemainingPoints() throws IllegalArgumentException {
         for (Order order : orders.reversed()) {
@@ -181,16 +186,16 @@ public class ExpenseOptimizer {
                 continue;
             }
             String usedCard = "";
-            double spentAmount = 0;
-            for (Map.Entry<String, Double> entry : order.getUsedPaymentsMethods().entrySet()) {
+            BigDecimal spentAmount = new BigDecimal("0.00").setScale(2, RoundingMode.HALF_UP);
+            for (Map.Entry<String, BigDecimal> entry : order.getUsedPaymentsMethods().entrySet()) {
                 if (!entry.getKey().equals("PUNKTY_10")) {
                     usedCard = entry.getKey();
-                    spentAmount = entry.getValue();
+                    spentAmount = entry.getValue().setScale(2, RoundingMode.HALF_UP);
                     break;
                 }
             }
 
-            if (spentAmount >= pointsMethod.getLimit()) {
+            if (spentAmount.compareTo(pointsMethod.getLimit()) >= 0) {
                 // W tej sytuacji wydaliśmy już wszystkie punkty, więc kończymy.
                 payments.get(usedCard).getMoneyBack(pointsMethod.getLimit());
                 pointsMethod.spend(pointsMethod.getLimit());

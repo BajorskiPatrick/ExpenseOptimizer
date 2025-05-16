@@ -4,6 +4,8 @@ import ocado.model.Order;
 import ocado.model.PaymentMethod;
 import ocado.utils.OptimizerUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -20,188 +22,191 @@ public class ExpenseOptimizer {
     private final PaymentMethod pointsMethod;
 
     /** Obiekt {@link OptimizerUtils} dostarczający niezbędnych metod */
-<span class="fc" id="L23">    private final OptimizerUtils utils = new OptimizerUtils();</span>
+<span class="fc" id="L25">    private final OptimizerUtils utils = new OptimizerUtils();</span>
 
     /**
      * Konstruktor klasy ExpenseOptimizer.
      *
      * @param orders lista zamówień
-     * @param payments mapa metod płatności
+     * @param payments mapa {@link PaymentMethod}
      * @param pointsMethod metoda płatności punktowej
      */
-<span class="fc" id="L32">    public ExpenseOptimizer(List&lt;Order&gt; orders, Map&lt;String, PaymentMethod&gt; payments, PaymentMethod pointsMethod) {</span>
-<span class="fc" id="L33">        this.orders = orders;</span>
-<span class="fc" id="L34">        this.payments = payments;</span>
-<span class="fc" id="L35">        this.pointsMethod = pointsMethod;</span>
-<span class="fc" id="L36">    }</span>
+<span class="fc" id="L34">    public ExpenseOptimizer(List&lt;Order&gt; orders, Map&lt;String, PaymentMethod&gt; payments, PaymentMethod pointsMethod) {</span>
+<span class="fc" id="L35">        this.orders = orders;</span>
+<span class="fc" id="L36">        this.payments = payments;</span>
+<span class="fc" id="L37">        this.pointsMethod = pointsMethod;</span>
+<span class="fc" id="L38">    }</span>
 
     /**
      * Główna metoda optymalizująca płatności dla zamówień.
      *
      * @return true, jeśli optymalizacja zakończyła się sukcesem, false w przeciwnym wypadku
      * @throws IllegalArgumentException wyjątek rzucany z jednej z metod {@link OptimizerUtils#pay(PaymentMethod, Order)},
-     * {@link OptimizerUtils#pay(PaymentMethod, double)}, {@link #spentRemainingPoints()} i przekazywany dalej
+     * {@link OptimizerUtils#pay(PaymentMethod, BigDecimal)}, {@link #spentRemainingPoints()} i przekazywany dalej
      */
     public boolean optimize() throws IllegalArgumentException {
-<span class="fc" id="L46">        orders.sort(Comparator.comparing(Order::getValue).reversed());</span>
+<span class="fc" id="L48">        orders.sort(Comparator.comparing(Order::getValue).reversed());</span>
 
-<span class="fc" id="L48">        boolean wasEverythingPaid = true;</span>
-<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (Order order : orders) {</span>
-<span class="fc" id="L50">            double bestPromotion = 0;</span>
-<span class="fc" id="L51">            List&lt;PaymentMethod&gt; bestMethods = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L50">        boolean wasEverythingPaid = true;</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (Order order : orders) {</span>
+<span class="fc" id="L52">            BigDecimal bestPromotion = new BigDecimal(&quot;0.00&quot;);</span>
+<span class="fc" id="L53">            List&lt;PaymentMethod&gt; bestMethods = new ArrayList&lt;&gt;();</span>
 
             // Znajdujemy maksymalną procentową zniżkę z tych, które mogą nam dać metody z listy promotions.
-<span class="fc bfc" id="L54" title="All 2 branches covered.">            for (String s : order.getPromotions()) {</span>
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                if (!payments.containsKey(s)) {</span>
-<span class="nc" id="L56">                    continue;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (String s : order.getPromotions()) {</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">                if (!payments.containsKey(s)) {</span>
+<span class="nc" id="L58">                    continue;</span>
                 }
-<span class="fc" id="L58">                PaymentMethod pm = payments.get(s);</span>
-<span class="fc" id="L59">                pm.decrementOrdersAmount();</span>
-<span class="pc bpc" id="L60" title="1 of 4 branches missed.">                if (pm.getLimit() &gt;= order.getValue() &amp;&amp; pm.getDiscount() &gt; bestPromotion) {</span>
-<span class="fc" id="L61">                    bestPromotion = pm.getDiscount();</span>
+<span class="fc" id="L60">                PaymentMethod pm = payments.get(s);</span>
+<span class="fc" id="L61">                pm.decrementOrdersAmount();</span>
+<span class="pc bpc" id="L62" title="1 of 4 branches missed.">                if (pm.getLimit().compareTo(order.getValue()) &gt;= 0 &amp;&amp; pm.getDiscount().compareTo(bestPromotion) &gt; 0) {</span>
+<span class="fc" id="L63">                    bestPromotion = pm.getDiscount();</span>
                 }
-<span class="fc" id="L63">            }</span>
+<span class="fc" id="L65">            }</span>
 
             // Jeśli płatność wszystkiego punktami jest możliwa, to wybieramy tę opcję. Jeśli nie, to rozpatrujemy
             // wszystkie metody, których zniżka równa najlepszej zniżce.
-<span class="fc bfc" id="L67" title="All 2 branches covered.">            if (pointsMethod.getLimit() &gt;= order.getValue()</span>
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">                    &amp;&amp; pointsMethod.getDiscount() &gt;= bestPromotion) {</span>
-<span class="fc" id="L69">                bestMethods.add(pointsMethod);</span>
-<span class="fc" id="L70">                bestPromotion = pointsMethod.getDiscount();</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (pointsMethod.getLimit().compareTo(order.getValue()) &gt;= 0</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                    &amp;&amp; pointsMethod.getDiscount().compareTo(bestPromotion) &gt;= 0) {</span>
+<span class="fc" id="L71">                bestMethods.add(pointsMethod);</span>
+<span class="fc" id="L72">                bestPromotion = pointsMethod.getDiscount();</span>
             }
-<span class="fc bfc" id="L72" title="All 2 branches covered.">            else if (bestPromotion &gt; 0) {</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">                for (String s : order.getPromotions()) {</span>
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">                    if (!payments.containsKey(s)) {</span>
-<span class="nc" id="L75">                        continue;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            else if (bestPromotion.compareTo(new BigDecimal(&quot;0.00&quot;)) &gt; 0) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">                for (String s : order.getPromotions()) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                    if (!payments.containsKey(s)) {</span>
+<span class="nc" id="L77">                        continue;</span>
                     }
-<span class="fc bfc" id="L77" title="All 2 branches covered.">                    if (payments.get(s).getDiscount() == bestPromotion) {</span>
-<span class="fc" id="L78">                        bestMethods.add(payments.get(s));</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                    if (payments.get(s).getDiscount().compareTo(bestPromotion) == 0) {</span>
+<span class="fc" id="L80">                        bestMethods.add(payments.get(s));</span>
                     }
-<span class="fc" id="L80">                }</span>
+<span class="fc" id="L82">                }</span>
             }
 
-<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (bestPromotion &gt; 10) {</span>
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">                if (bestMethods.size() == 1) {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (bestPromotion.compareTo(new BigDecimal(&quot;10.00&quot;)) &gt; 0) {</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">                if (bestMethods.size() == 1) {</span>
                     // Brak remisu lub remis PUNKTY-KARTA.
-<span class="fc" id="L86">                    utils.pay(bestMethods.getFirst(), order);</span>
-<span class="fc" id="L87">                    order.usePaymentsMethod(bestMethods.getFirst().getId(), order.getValue());</span>
+<span class="fc" id="L88">                    utils.pay(bestMethods.getFirst(), order);</span>
+<span class="fc" id="L89">                    order.usePaymentsMethod(bestMethods.getFirst().getId(), order.getValue());</span>
                 }
                 else {
                     // Remis KARTA-KARTA.
-<span class="nc" id="L91">                    PaymentMethod pm = utils.findOptimalCard(bestMethods);</span>
-<span class="nc" id="L92">                    utils.pay(pm, order);</span>
-<span class="nc" id="L93">                    order.usePaymentsMethod(pm.getId(), order.getValue());</span>
-<span class="nc" id="L94">                }</span>
+<span class="nc" id="L93">                    PaymentMethod pm = utils.findOptimalCard(bestMethods);</span>
+<span class="nc" id="L94">                    utils.pay(pm, order);</span>
+<span class="nc" id="L95">                    order.usePaymentsMethod(pm.getId(), order.getValue());</span>
+<span class="nc" id="L96">                }</span>
             }
             else {
-<span class="fc" id="L97">                double toPayByPoints = order.getValue() * 0.1; // Początkowo 10% zamówienia.</span>
-<span class="fc" id="L98">                double toPayByCard = order.getValue() - toPayByPoints * 2; // Bo 10% z punktów, plus drugie tyle rabatu.</span>
+<span class="fc" id="L99">                BigDecimal toPayByPoints = order.getValue().multiply(new BigDecimal(&quot;0.10&quot;).setScale(2, RoundingMode.HALF_UP)); // Początkowo 10% zamówienia.</span>
+<span class="fc" id="L100">                BigDecimal toPayByCard = order.getValue().subtract(toPayByPoints.multiply(new BigDecimal(&quot;2.00&quot;)).setScale(2, RoundingMode.HALF_UP)).</span>
+<span class="fc" id="L101">                        setScale(2, RoundingMode.HALF_UP); // Bo 10% z punktów, plus drugie tyle rabatu.</span>
                 PaymentMethod pm;
 
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">                if (toPayByPoints &lt;= pointsMethod.getLimit()) {</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">                if (toPayByPoints.compareTo(pointsMethod.getLimit()) &lt;= 0) {</span>
                     // Stosujemy płatność PUNKTY_10 i chcemy opłacić z punktów tylko 10% (resztę punktów zachować na później).
                     // Resztę zamówienia chcemy opłacić &quot;najgorszą&quot; możliwą kartą.
-<span class="fc" id="L104">                    double finalToPayByCard = toPayByCard;</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -&gt; p.getLimit() &gt;= finalToPayByCard).toList());</span>
+<span class="fc" id="L107">                    BigDecimal finalToPayByCard = toPayByCard;</span>
 
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                    if (pm == null) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -&gt; p.getLimit().compareTo(finalToPayByCard) &gt;= 0).toList());</span>
+
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                    if (pm == null) {</span>
                         // Nie znaleźliśmy karty z limitem, który pozwoli opłacić punktami jedynie 10% - zatem szukamy
                         // karty z maksymalnym limitem &lt;= niż aktualne &quot;toPayByCard&quot; i uzupełniamy punktami.
-<span class="nc" id="L110">                        List&lt;PaymentMethod&gt; maxLimitCards = utils.findWithMaxLimit(payments.values().stream().toList());</span>
-<span class="nc" id="L111">                        pm = utils.findBestCardToPayRest(maxLimitCards);</span>
+<span class="nc" id="L114">                        List&lt;PaymentMethod&gt; maxLimitCards = utils.findWithMaxLimit(payments.values().stream().toList());</span>
+<span class="nc" id="L115">                        pm = utils.findBestCardToPayRest(maxLimitCards);</span>
 
-<span class="nc bnc" id="L113" title="All 4 branches missed.">                        if (pm != null &amp;&amp; order.getValue() - pm.getLimit() &lt;= pointsMethod.getLimit()) {</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">                        if (pm != null &amp;&amp; order.getValue().subtract(pm.getLimit()).compareTo(pointsMethod.getLimit()) &lt;= 0) {</span>
                             // Wystarcza punktów na uzupełnienie do wybranej karty, więc płacimy.
-<span class="nc" id="L115">                            toPayByCard = pm.getLimit();</span>
-<span class="nc" id="L116">                            toPayByPoints = order.getValue() * 0.9 - toPayByCard;</span>
+<span class="nc" id="L119">                            toPayByCard = pm.getLimit();</span>
+<span class="nc" id="L120">                            toPayByPoints = order.getValue().multiply(new BigDecimal(&quot;0.90&quot;)).setScale(2, RoundingMode.HALF_UP).</span>
+<span class="nc" id="L121">                                    subtract(toPayByCard).setScale(2, RoundingMode.HALF_UP);</span>
                         }
                         else {
                             // Doszliśmy do momentu, w którym nie jesteśmy w stanie dobrać żadnej metody płatności
                             // do zamówienia -&gt; prawdopodobnie do tego przykładu zastosowana heurystyka się nie sprawdza,
                             // więc kończymy optymalizację :(.
-<span class="nc" id="L122">                            wasEverythingPaid = false;</span>
-<span class="nc" id="L123">                            break;</span>
+<span class="nc" id="L127">                            wasEverythingPaid = false;</span>
+<span class="nc" id="L128">                            break;</span>
                         }
                     }
-<span class="fc" id="L126">                    utils.pay(pointsMethod, toPayByPoints);</span>
-<span class="fc" id="L127">                    utils.pay(pm, toPayByCard);</span>
-<span class="fc" id="L128">                    order.usePaymentsMethod(&quot;PUNKTY_10&quot;, toPayByPoints);</span>
-<span class="fc" id="L129">                    order.usePaymentsMethod(pm.getId(), toPayByCard);</span>
-<span class="fc" id="L130">                }</span>
-<span class="nc bnc" id="L131" title="All 2 branches missed.">                else if (bestMethods.size() == 1) {</span>
+<span class="fc" id="L131">                    utils.pay(pointsMethod, toPayByPoints);</span>
+<span class="fc" id="L132">                    utils.pay(pm, toPayByCard);</span>
+<span class="fc" id="L133">                    order.usePaymentsMethod(&quot;PUNKTY_10&quot;, toPayByPoints);</span>
+<span class="fc" id="L134">                    order.usePaymentsMethod(pm.getId(), toPayByCard);</span>
+<span class="fc" id="L135">                }</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">                else if (bestMethods.size() == 1) {</span>
                     // Nie damy rady zapłacić punktami i jest brak remisu.
-<span class="nc" id="L133">                    utils.pay(bestMethods.getFirst(), order);</span>
-<span class="nc" id="L134">                    order.usePaymentsMethod(bestMethods.getFirst().getId(), order.getValue());</span>
+<span class="nc" id="L138">                    utils.pay(bestMethods.getFirst(), order);</span>
+<span class="nc" id="L139">                    order.usePaymentsMethod(bestMethods.getFirst().getId(), order.getValue());</span>
                 }
-<span class="nc bnc" id="L136" title="All 2 branches missed.">                else if (bestMethods.size() &gt; 1) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">                else if (bestMethods.size() &gt; 1) {</span>
                     // Nie damy rady zapłacić punktami i jest remis KARTA-KARTA.
-<span class="nc" id="L138">                    pm = utils.findOptimalCard(bestMethods);</span>
-<span class="nc" id="L139">                    utils.pay(pm, order);</span>
-<span class="nc" id="L140">                    order.usePaymentsMethod(pm.getId(), order.getValue());</span>
+<span class="nc" id="L143">                    pm = utils.findOptimalCard(bestMethods);</span>
+<span class="nc" id="L144">                    utils.pay(pm, order);</span>
+<span class="nc" id="L145">                    order.usePaymentsMethod(pm.getId(), order.getValue());</span>
                 }
                 else {
                     // Nie ma żadnej promocyjnej opcji płatności i PUNKTY_10 również nie mogą być zastosowane.
                     // Szukamy karty do opłacenia reszty (całego zamówienia) i ją stosujemy.
-<span class="nc bnc" id="L145" title="All 2 branches missed.">                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -&gt; p.getLimit() &gt;= order.getValue()).toList());</span>
-<span class="nc bnc" id="L146" title="All 2 branches missed.">                    if (pm == null) {</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                    pm = utils.findBestCardToPayRest(payments.values().stream().filter(p -&gt; p.getLimit().compareTo(order.getValue()) &gt;= 0).toList());</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">                    if (pm == null) {</span>
                         // Również dochodzimy do momentu, w którym nie jesteśmy w stanie dobrać żadnej metody płatności
                         // do zamówienia, więc kończymy optymalizację :(.
-<span class="nc" id="L149">                        wasEverythingPaid = false;</span>
-<span class="nc" id="L150">                        break;</span>
+<span class="nc" id="L154">                        wasEverythingPaid = false;</span>
+<span class="nc" id="L155">                        break;</span>
                     }
-<span class="nc" id="L152">                    utils.pay(pm, order);</span>
-<span class="nc" id="L153">                    order.usePaymentsMethod(pm.getId(), order.getValue());</span>
+<span class="nc" id="L157">                    utils.pay(pm, order);</span>
+<span class="nc" id="L158">                    order.usePaymentsMethod(pm.getId(), order.getValue());</span>
                 }
             }
-<span class="fc" id="L156">        }</span>
+<span class="fc" id="L161">        }</span>
 
         // Skończyliśmy główną pętlę algorytmu. Jeśli nie udało się w niej opłacić wszystkich zamówień lub wyczerpaliśmy
         // punkty -&gt; po prostu zwracamy wynik działania algorytmu.
-<span class="pc bpc" id="L160" title="2 of 4 branches missed.">        if (!wasEverythingPaid || pointsMethod.getLimit() == 0) {</span>
-<span class="nc" id="L161">            return wasEverythingPaid;</span>
+<span class="pc bpc" id="L165" title="2 of 4 branches missed.">        if (!wasEverythingPaid || pointsMethod.getLimit().compareTo(new BigDecimal(&quot;0.00&quot;)) == 0) {</span>
+<span class="nc" id="L166">            return wasEverythingPaid;</span>
         }
 
         // W innym wypadku będziemy iterować od ostatniego zamówienia i &quot;poprawiać&quot; wynik algorytmu, poprzez wydanie
         // pozostałych punktów na zamówienia opłacone metodą PUNKTY_10 -&gt; będziemy &quot;oddawać&quot; określoną kwotę na kartę
         // użytą do uzupełnienia tego zamówienia i &quot;dopłacać&quot; tę kwotę punktami, aż do momentu, gdy pozbędziemy się
         // wszystkich punktów -&gt; w duchu ograniczenia minimalizacji płatności kartą.
-<span class="fc" id="L168">        spentRemainingPoints();</span>
+<span class="fc" id="L173">        spentRemainingPoints();</span>
 
-<span class="fc" id="L170">        return true;</span>
+<span class="fc" id="L175">        return true;</span>
     }
 
     /**
      * Metoda wydająca pozostałe punkty na zamówienia opłacone metodą PUNKTY_10.
-     * @throws IllegalArgumentException wyjątek rzucany z {@link PaymentMethod#getMoneyBack(double)} i przekazywany dalej
+     * @throws IllegalArgumentException wyjątek rzucany z {@link PaymentMethod#getMoneyBack(BigDecimal)} i przekazywany dalej
      */
     private void spentRemainingPoints() throws IllegalArgumentException {
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        for (Order order : orders.reversed()) {</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        for (Order order : orders.reversed()) {</span>
             // Zamówienie może mieć maksymalnie 2 opcje płatności -&gt; PUNKTY_10 + KARTA.
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">            if (order.getUsedPaymentsMethods().size() != 2) {</span>
-<span class="nc" id="L181">                continue;</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">            if (order.getUsedPaymentsMethods().size() != 2) {</span>
+<span class="nc" id="L186">                continue;</span>
             }
-<span class="fc" id="L183">            String usedCard = &quot;&quot;;</span>
-<span class="fc" id="L184">            double spentAmount = 0;</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">            for (Map.Entry&lt;String, Double&gt; entry : order.getUsedPaymentsMethods().entrySet()) {</span>
-<span class="fc bfc" id="L186" title="All 2 branches covered.">                if (!entry.getKey().equals(&quot;PUNKTY_10&quot;)) {</span>
-<span class="fc" id="L187">                    usedCard = entry.getKey();</span>
-<span class="fc" id="L188">                    spentAmount = entry.getValue();</span>
-<span class="fc" id="L189">                    break;</span>
+<span class="fc" id="L188">            String usedCard = &quot;&quot;;</span>
+<span class="fc" id="L189">            BigDecimal spentAmount = new BigDecimal(&quot;0.00&quot;).setScale(2, RoundingMode.HALF_UP);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            for (Map.Entry&lt;String, BigDecimal&gt; entry : order.getUsedPaymentsMethods().entrySet()) {</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">                if (!entry.getKey().equals(&quot;PUNKTY_10&quot;)) {</span>
+<span class="fc" id="L192">                    usedCard = entry.getKey();</span>
+<span class="fc" id="L193">                    spentAmount = entry.getValue().setScale(2, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L194">                    break;</span>
                 }
-<span class="fc" id="L191">            }</span>
+<span class="fc" id="L196">            }</span>
 
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            if (spentAmount &gt;= pointsMethod.getLimit()) {</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">            if (spentAmount.compareTo(pointsMethod.getLimit()) &gt;= 0) {</span>
                 // W tej sytuacji wydaliśmy już wszystkie punkty, więc kończymy.
-<span class="fc" id="L195">                payments.get(usedCard).getMoneyBack(pointsMethod.getLimit());</span>
-<span class="fc" id="L196">                pointsMethod.spend(pointsMethod.getLimit());</span>
-<span class="fc" id="L197">                break;</span>
+<span class="fc" id="L200">                payments.get(usedCard).getMoneyBack(pointsMethod.getLimit());</span>
+<span class="fc" id="L201">                pointsMethod.spend(pointsMethod.getLimit());</span>
+<span class="fc" id="L202">                break;</span>
             }
             else {
                 // Tutaj wydaliśmy tylko część naszych pozostałych punktów, więc idziemy do kolejnego zamówienia.
-<span class="nc" id="L201">                payments.get(usedCard).getMoneyBack(spentAmount);</span>
-<span class="nc" id="L202">                pointsMethod.spend(spentAmount);</span>
+<span class="nc" id="L206">                payments.get(usedCard).getMoneyBack(spentAmount);</span>
+<span class="nc" id="L207">                pointsMethod.spend(spentAmount);</span>
             }
-<span class="nc" id="L204">        }</span>
-<span class="fc" id="L205">    }</span>
+<span class="nc" id="L209">        }</span>
+<span class="fc" id="L210">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

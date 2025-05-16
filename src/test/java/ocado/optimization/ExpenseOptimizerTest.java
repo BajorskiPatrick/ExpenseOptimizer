@@ -7,6 +7,7 @@ import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -25,9 +26,9 @@ class ExpenseOptimizerTest {
 
         boolean result = optimizer.optimize();
         assertTrue(result);
-        assertEquals(170, payments.get("MegaBank").getSpending());
-        assertEquals(150, payments.get("SuperKarta").getSpending());
-        assertEquals(150, pointsMethod.getSpending());
-        assertEquals(0, payments.get("ZwyklaKarta").getSpending());
+        assertEquals(new BigDecimal("170.00"), payments.get("MegaBank").getSpending());
+        assertEquals(new BigDecimal("150.00"), payments.get("SuperKarta").getSpending());
+        assertEquals(new BigDecimal("150.00"), pointsMethod.getSpending());
+        assertEquals(new BigDecimal("0.00"), payments.get("ZwyklaKarta").getSpending());
     }
 }

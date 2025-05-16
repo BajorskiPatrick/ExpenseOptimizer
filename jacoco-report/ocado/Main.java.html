@@ -36,7 +36,7 @@ import java.util.Map;
 <span class="nc" id="L36">            payments = JsonProcessor.getPaymentsAsMap(paymentsFile, orders);</span>
 <span class="nc" id="L37">            pointsMethod = payments.remove(&quot;PUNKTY&quot;);</span>
 <span class="nc bnc" id="L38" title="All 2 branches missed.">            if (pointsMethod == null) {</span>
-<span class="nc" id="L39">                pointsMethod = new PaymentMethod(-1, -1.0);</span>
+<span class="nc" id="L39">                pointsMethod = new PaymentMethod(&quot;-1.00&quot;, &quot;-1.00&quot;);</span>
             }
 <span class="nc" id="L41">        } catch (FileNotFoundException | IllegalArgumentException e) {</span>
 <span class="nc" id="L42">            System.err.println(e.getMessage());</span>

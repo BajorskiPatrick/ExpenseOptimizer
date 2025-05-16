@@ -48,11 +48,11 @@ public class JsonProcessor {
     }
 
     /**
-     * Konwertuje plik JSON z metodami płatności na mapę obiektów PaymentMethod.
+     * Konwertuje plik JSON z metodami płatności na mapę obiektów {@link PaymentMethod}.
      *
      * @param file plik JSON z metodami płatności
      * @param orders lista zamówień używana do aktualizacji liczby zamówień dla metod płatności
-     * @return mapa obiektów PaymentMethod z kluczami będącymi identyfikatorami metod
+     * @return mapa obiektów {@link PaymentMethod} z kluczami będącymi identyfikatorami metod
      * @throws IOException jeśli wystąpi błąd odczytu pliku
      * @throws FileNotFoundException jeśli plik nie istnieje
      */

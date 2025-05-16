@@ -6,6 +6,7 @@ import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,59 +31,58 @@ class OptimizerUtilsTest {
 
     @Test
     void testPayWholeOrder() {
-        PaymentMethod pm = new PaymentMethod();
-        Order order = new Order();
-        order.setValue(100);
-        pm.setLimit(200);
-        pm.setDiscount(20);
+        PaymentMethod pm = new PaymentMethod("", "", "");
+        Order order = new Order("", "200", new ArrayList<>());
+        pm.setLimit(new BigDecimal("200.00"));
+        pm.setDiscount(new BigDecimal("20.00"));
 
         utils.pay(pm, order);
-        assertEquals(80, pm.getSpending());
+        assertEquals(new BigDecimal("160.00"), pm.getSpending());
     }
 
     @Test
     void testPayProvidedAmount() {
-        PaymentMethod pm = new PaymentMethod();
-        pm.setLimit(200);
-        utils.pay(pm, 100);
-        assertEquals(100, pm.getSpending());
+        PaymentMethod pm = new PaymentMethod("", "", "");
+        pm.setLimit(new BigDecimal("200.00"));
+        utils.pay(pm, new BigDecimal("100.00"));
+        assertEquals(new BigDecimal("100.00"), pm.getSpending());
     }
 
     @Test
-    void testFindWithMinLimit() throws IOException {
+    void testFindWithMinLimit() {
         List<PaymentMethod> min = utils.findWithMinLimit(methods);
         assertEquals(1, min.size());
         assertEquals("MegaBank", min.getFirst().getId());
     }
 
     @Test
-    void findWithMinLimitWhenListEmpty() throws IOException {
+    void findWithMinLimitWhenListEmpty() {
         List<PaymentMethod> min = utils.findWithMinLimit(new ArrayList<>());
         assertTrue(min.isEmpty());
     }
 
     @Test
-    void testFindWithMaxLimit() throws IOException {
+    void testFindWithMaxLimit() {
         List<PaymentMethod> max = utils.findWithMaxLimit(methods);
         assertEquals(1, max.size());
         assertEquals("ZwyklaKarta", max.getFirst().getId());
     }
 
     @Test
-    void findWithMaxLimitWhenListEmpty() throws IOException {
+    void findWithMaxLimitWhenListEmpty() {
         List<PaymentMethod> max = utils.findWithMaxLimit(new ArrayList<>());
         assertTrue(max.isEmpty());
     }
 
     @Test
-    void findLowestDiscountMethods() throws IOException {
+    void findLowestDiscountMethods() {
         List<PaymentMethod> lowest = utils.findLowestDiscountMethods(methods);
         assertEquals(1, lowest.size());
         assertEquals("ZwyklaKarta", lowest.getFirst().getId());
     }
 
     @Test
-    void findLowestDiscountMethodsWhenListEmpty() throws IOException {
+    void findLowestDiscountMethodsWhenListEmpty() {
         List<PaymentMethod> lowest = utils.findLowestDiscountMethods(new ArrayList<>());
         assertTrue(lowest.isEmpty());
     }
