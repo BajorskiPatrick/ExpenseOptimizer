@@ -8,20 +8,20 @@ import java.math.RoundingMode;
 import java.util.List;
 
 /**
- * Klasa narzędziowa dostarczająca niezbędnych metod do przeprowadzenia optymalizacji.
+ * Utility class providing necessary methods for optimization.
  */
 public class OptimizerUtils {
     /**
-     * Domyślny konstruktor tworzący obiekt klasy
+     * Default constructor creating an instance of the class.
      */
     public OptimizerUtils() {}
 
     /**
-     * Metoda realizująca płatność za zamówienie wybraną metodą płatności.
+     * Processes payment for an order using the specified payment method.
      *
-     * @param payment metoda płatności
-     * @param order zamówienie do opłacenia
-     * @throws IllegalArgumentException wyjątek rzucany z {@link PaymentMethod#spend(BigDecimal)} i przekazywany dalej
+     * @param payment the payment method
+     * @param order the order to be paid
+     * @throws IllegalArgumentException exception thrown from {@link PaymentMethod#spend(BigDecimal)} and propagated further
      */
     public void pay(PaymentMethod payment, Order order) throws IllegalArgumentException {
         BigDecimal multiplier = new BigDecimal("1.00").subtract(payment.getDiscount().divide(new BigDecimal("100.00"), 2, RoundingMode.HALF_UP));
@@ -29,35 +29,35 @@ public class OptimizerUtils {
     }
 
     /**
-     * Metoda realizująca płatność na określoną kwotę poprzez wybraną metodą płatności.
+     * Processes payment for a specified amount using the chosen payment method.
      *
-     * @param payment metoda płatności
-     * @param value kwota do zapłacenia
-     * @throws IllegalArgumentException wyjątek rzucany z {@link PaymentMethod#spend(BigDecimal)} i przekazywany dalej
+     * @param payment the payment method
+     * @param value the amount to be paid
+     * @throws IllegalArgumentException exception thrown from {@link PaymentMethod#spend(BigDecimal)} and propagated further
      */
     public void pay(PaymentMethod payment, BigDecimal value) throws IllegalArgumentException {
         payment.spend(value.setScale(2, RoundingMode.HALF_UP));
     }
 
     /**
-     * Znajduje najlepszą kartę do opłacenia reszty zamówienia.<br>
-     * Korzysta z heurystyk (w kolejności):
+     * Finds the best card to pay the remaining balance of an order.<br>
+     * Uses heuristics (in order):
      * <ul>
-     *   <li>'Metoda, której nie ma na liście promotions żadnego nieprzetworzonego jeszcze zamówienia'. W przypadku remisu:
+     *   <li>'Method not present in the promotions list of any unprocessed order'. In case of a tie:
      *      <ul>
-     *          <li>'Minimalny pozostały limit', dalsze remisy nie są rozpatrywane</li>
+     *          <li>'Minimum remaining limit', further ties are not resolved</li>
      *      </ul>
      *   </li>
-     *   <li>'Minimalna zniżka'. W przypadku remisu:
+     *   <li>'Minimum discount'. In case of a tie:
      *      <ul>
-     *          <li>'Minimalna liczba nieprzetworzonych zamówień, na których liście promotions znajduje się metoda płatności'</li>
-     *          <li>'Minimalny pozostały limit', dalsze remisy nie są rozpatrywane</li>
+     *          <li>'Minimum number of unprocessed orders where the payment method is listed in promotions'</li>
+     *          <li>'Minimum remaining limit', further ties are not resolved</li>
      *      </ul>
      *   </li>
      * </ul>
      *
-     * @param methods lista dostępnych {@link PaymentMethod}
-     * @return najlepsze {@link PaymentMethod} lub null, jeśli nie znaleziono
+     * @param methods the list of available {@link PaymentMethod}
+     * @return the best {@link PaymentMethod} or null if not found
      */
     public PaymentMethod findBestCardToPayRest(List<PaymentMethod> methods) {
         if (methods.isEmpty()) {
@@ -71,83 +71,83 @@ public class OptimizerUtils {
                 filter(pm -> pm.getOrdersAmount() == 0).toList();
 
         if (zeroOrdersMethods.size() == 1) {
-            // Zwracamy tę jedyną kartę, która nie może być stosowana jako promocja nigdzie indziej.
+            // We are returning this unique card, which cannot be used as a promotion anywhere else.
             return zeroOrdersMethods.getFirst();
         }
         else if (zeroOrdersMethods.size() > 1) {
-            // Zwracamy tą z metod mających 0 orders amount, która dodatkowo ma minimalny limit.
+            // We return the method with 0 orders amount, which also has a minimum limit.
             return findWithMinLimit(zeroOrdersMethods).getFirst();
         }
 
         List<PaymentMethod> lowestDiscountMethods = findLowestDiscountMethods(methods);
         if (lowestDiscountMethods.size() == 1) {
-            // Zwracamy tę o najmniejszej możliwej zniżce.
+            // We return the one with the smallest possible discount.
             return lowestDiscountMethods.getFirst();
         }
         else {
-            // Mamy remis. Szukamy najoptymalniejszej z metod (stosując reguły remisu KARTA-KARTA).
+            // We have a tie. We are looking for the most optimal method (using the CARD-CARD tie rules).
             return findOptimalCard(lowestDiscountMethods);
         }
     }
 
     /**
-     * Znajduje optymalną kartę spośród listy metod płatności.<br>
-     * Korzysta z heurystyk (w kolejności, do momentu wyłonienia 'zwycięzcy'):
+     * Finds the optimal card from a list of payment methods.<br>
+     * Uses heuristics (in order, until a 'winner' is determined):
      * <ul>
-     *   <li>'Minimalna liczba nieprzetworzonych zamówień, na których liście promotions znajduje się metoda płatności'</li>
-     *   <li>'Minimalny pozostały limit', dalsze remisy nie są rozpatrywane</li>
+     *   <li>'Minimum number of unprocessed orders where the payment method is listed in promotions'</li>
+     *   <li>'Minimum remaining limit', further ties are not resolved</li>
      * </ul>
      *
-     * @param bestMethods lista {@link PaymentMethod} do wyboru
-     * @return optymalne {@link PaymentMethod}
+     * @param bestMethods the list of {@link PaymentMethod} to choose from
+     * @return the optimal {@link PaymentMethod}
      */
     public PaymentMethod findOptimalCard(List<PaymentMethod> bestMethods) {
         int minOrdersAmount = bestMethods.stream().mapToInt(PaymentMethod::getOrdersAmount).min().orElse(-1);
         List<PaymentMethod> methodsWithMinOrdersAmount = bestMethods.stream().filter(pm -> pm.getOrdersAmount() == minOrdersAmount).toList();
 
         if (methodsWithMinOrdersAmount.size() == 1) {
-            // Wybieramy tę z najmniejszą ilością nieprzetworzonych zamówień, dla których może przynieść promocję
-            // (jest obecna na liście promotions).
+            // We choose the one with the least amount of unprocessed orders that can bring a promotion
+            // (is present on the promotions list).
             return methodsWithMinOrdersAmount.getFirst();
         }
         else {
-            // Wybieramy tę z najmniejszym limitem.
+            // We choose the one with the smallest limit.
             return findWithMinLimit(methodsWithMinOrdersAmount).getFirst();
         }
     }
 
     /**
-     * Znajduje metody płatności z najniższym rabatem.
+     * Finds payment methods with the lowest discount.
      *
-     * @param methods lista {@link PaymentMethod} do sprawdzenia
-     * @return lista {@link PaymentMethod} z najniższym rabatem
+     * @param methods the list of {@link PaymentMethod} to check
+     * @return a list of {@link PaymentMethod} with the lowest discount
      */
     public List<PaymentMethod> findLowestDiscountMethods(List<PaymentMethod> methods) {
-        // Zwracamy metody, które mają minimalny rabat.
+        // We return methods that have a minimal discount.
         BigDecimal minDiscount = methods.stream().map(PaymentMethod::getDiscount).min(BigDecimal::compareTo).orElse(null);
         return methods.stream().filter(pm -> pm.getDiscount().compareTo(minDiscount) == 0).toList();
     }
 
     /**
-     * Znajduje metody płatności z minimalnym limitem.
+     * Finds payment methods with the minimum limit.
      *
-     * @param toCheck lista metod płatności do sprawdzenia
-     * @return lista {@link PaymentMethod} z minimalnym limitem
+     * @param toCheck the list of payment methods to check
+     * @return a list of {@link PaymentMethod} with the minimum limit
      */
     public List<PaymentMethod> findWithMinLimit(List<PaymentMethod> toCheck) {
-        // Zwracamy metody, które mają minimalny limit.
+        // We return methods that have a minimum limit.
         BigDecimal minLimit = toCheck.stream().map(PaymentMethod::getLimit).min(BigDecimal::compareTo).orElse(null);
         return toCheck.stream().filter(pm -> pm.getLimit().compareTo(minLimit) == 0).toList();
     }
 
     /**
-     * Znajduje metody płatności z maksymalnym limitem.
+     * Finds payment methods with the maximum limit.
      *
-     * @param toCheck lista {@link PaymentMethod} do sprawdzenia
-     * @return lista {@link PaymentMethod} z maksymalnym limitem
+     * @param toCheck the list of {@link PaymentMethod} to check
+     * @return a list of {@link PaymentMethod} with the maximum limit
      */
     public List<PaymentMethod> findWithMaxLimit(List<PaymentMethod> toCheck) {
-        // Zwracamy metody, które mają maksymalny limit.
+        // We return methods that have a maximum limit.
         BigDecimal maxLimit = toCheck.stream().map(PaymentMethod::getLimit).max(BigDecimal::compareTo).orElse(null);
         return toCheck.stream().filter(pm -> pm.getLimit().compareTo(maxLimit) == 0).toList();
     }

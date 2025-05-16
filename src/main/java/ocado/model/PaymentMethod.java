@@ -9,31 +9,32 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Klasa reprezentująca metodę płatności.
+ * Class representing a payment method.
  */
 @Getter
 @Setter
 public class PaymentMethod {
-    /** Unikalny identyfikator metody płatności */
+    /** Unique payment method identifier */
     private String id;
 
-    /** Wartość rabatu w procentach */
+    /** Discount value in percent */
     private BigDecimal discount;
 
-    /** Dostępny limit płatności */
+    /** Available payment limit */
     private BigDecimal limit;
 
-    /** Liczba nieprzetworzonych jeszcze zamówień, dla których metoda może być użyta jako promocja */
+    /** Number of unprocessed orders where the method can be used as a promotion */
     private int ordersAmount;
 
-    /** Łączna kwota wydana tą metodą płatności */
+    /** Total amount spent using this payment method */
     private BigDecimal spending = new BigDecimal("0.00").setScale(2, RoundingMode.HALF_UP);
 
     /**
-     * Konstruktor używany przez Jackson do utworzenia obiekty z danych przekazanych w pliku JSON
-     * @param id identyfikator zamówienia
-     * @param discount wartość zniżki dla tej metody płatności
-     * @param limit wartość limitu wydatków dla tej metody płatności
+     * Constructor used by Jackson to create an object from JSON data.
+     *
+     * @param id the payment method identifier
+     * @param discount the discount value for this payment method
+     * @param limit the spending limit for this payment method
      */
     @JsonCreator
     public PaymentMethod(@JsonProperty("id") String id, @JsonProperty("discount") String discount, @JsonProperty("limit") String limit) {
@@ -43,9 +44,10 @@ public class PaymentMethod {
     }
 
     /**
-     * Konstruktor używany do utworzenia "sztucznej" metody płatności, gdy metoda PUNKTY nie została zdefiniowana.
-     * @param discount zniżka dla tworzonej metody
-     * @param limit limit dla tworzonej metody
+     * Constructor used to create an "artificial" payment method when the PUNKTY method is not defined.
+     *
+     * @param discount the discount for the created method
+     * @param limit the limit for the created method
      */
     public PaymentMethod(String discount, String limit) {
         this.discount = new BigDecimal(!discount.isEmpty() ? discount : "0.00").setScale(2, RoundingMode.HALF_UP);
@@ -53,14 +55,14 @@ public class PaymentMethod {
     }
 
     /**
-     * Zwiększa licznik zamówień, dla których metoda może być użyta jako promocja.
+     * Increments the order count for which the method can be used as a promotion.
      */
     public void incrementOrdersAmount() {
         ordersAmount++;
     }
 
     /**
-     * Zmniejsza licznik zamówień, dla których metoda może być użyta jako promocja.
+     * Decrements the order count for which the method can be used as a promotion.
      */
     public void decrementOrdersAmount() {
         if (ordersAmount > 0) {
@@ -69,43 +71,43 @@ public class PaymentMethod {
     }
 
     /**
-     * Realizuje płatność określoną kwotą tą metodą płatności.
+     * Processes a payment of the specified amount using this payment method.
      *
-     * @param amount kwota do zapłacenia
-     * @throws IllegalArgumentException rzucany, gdy kwota do wydania przekracza limit metody
+     * @param amount the amount to be paid
+     * @throws IllegalArgumentException thrown if the amount to be spent exceeds the method's limit
      */
     public void spend(BigDecimal amount) throws IllegalArgumentException {
         if (amount.compareTo(new BigDecimal("0.00")) < 0) {
-            throw new IllegalArgumentException("Kwota do wydania nie moze byc liczba ujemna!");
+            throw new IllegalArgumentException("The amount to be spent cannot be a negative number!");
         }
         if (amount.compareTo(limit) > 0) {
-            throw new IllegalArgumentException("Kwota do wydania przekracza limit metody!");
+            throw new IllegalArgumentException("The amount to be spent exceeds the method limit!");
         }
         this.spending = this.spending.add(amount).setScale(2, RoundingMode.HALF_UP);
         this.limit =  this.limit.subtract(amount).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Zwraca do dostępnego limitu podaną kwotę płatności (cofa transakcję).
+     * Returns the specified payment amount to the available limit (reverses a transaction).
      *
-     * @param amount kwota do zwrotu
-     * @throws IllegalArgumentException rzucany, gdy kwota do oddania przewyższa faktyczne wydatki
+     * @param amount the amount to be returned
+     * @throws IllegalArgumentException thrown if the amount to be returned exceeds the actual spending
      */
     public void getMoneyBack(BigDecimal amount) throws IllegalArgumentException {
         if (amount.compareTo(new BigDecimal("0.00")) < 0) {
-            throw new IllegalArgumentException("Kwota do oddania nie moze byc liczba ujemna!");
+            throw new IllegalArgumentException("The amount to be returned cannot be a negative number!");
         }
         if (amount.compareTo(spending) > 0) {
-            throw new IllegalArgumentException("Kwota do oddania przewyzsza faktyczne wydatki!");
+            throw new IllegalArgumentException("The amount to be returned exceeds the actual expenses!");
         }
         this.spending = this.spending.subtract(amount).setScale(2, RoundingMode.HALF_UP);
         this.limit = this.limit.add(amount).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Zwraca informację o wydatkach w formacie tekstowym.
+     * Returns spending information as a formatted string.
      *
-     * @return string w formacie "id wydana_kwota"
+     * @return a string in the format "id spent_amount"
      */
     public String printSpending() {
         return id + " " + spending;

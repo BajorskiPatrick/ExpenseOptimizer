@@ -15,28 +15,28 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Klasa narzędziowa do przetwarzania plików JSON na obiekty domenowe.
+ * Utility class for processing JSON files into domain objects.
  */
 public class JsonProcessor {
     /**
-     * Domyślny konstruktor tworzący obiekt klasy.
+     * Default constructor creating an instance of the class.
      */
     public JsonProcessor() {}
 
     /**
-     * Konwertuje plik JSON z zamówieniami na listę obiektów Order.
+     * Converts a JSON file containing orders into a list of Order objects.
      *
-     * @param file plik JSON z zamówieniami
-     * @return lista obiektów Order
-     * @throws IOException jeśli wystąpi błąd odczytu pliku
-     * @throws FileNotFoundException jeśli plik nie istnieje
+     * @param file the JSON file containing orders
+     * @return a list of Order objects
+     * @throws IOException if a file read error occurs
+     * @throws FileNotFoundException if the file does not exist
      */
     public static List<Order> getOrdersAsList(File file) throws IOException {
         if (!file.exists()) {
             throw new FileNotFoundException("File not found: " + file.getAbsolutePath());
         }
         if (!file.getName().toLowerCase().endsWith(".json")) {
-            throw new IllegalArgumentException("Podany plik nie jest plikiem z rozszerzeniem '.json': " + file.getAbsolutePath());
+            throw new IllegalArgumentException("The specified file is not a file with the extension '.json': " + file.getAbsolutePath());
         }
         if (file.length() == 0) {
             return new ArrayList<>();
@@ -48,20 +48,20 @@ public class JsonProcessor {
     }
 
     /**
-     * Konwertuje plik JSON z metodami płatności na mapę obiektów {@link PaymentMethod}.
+     * Converts a JSON file containing payment methods into a map of {@link PaymentMethod} objects.
      *
-     * @param file plik JSON z metodami płatności
-     * @param orders lista zamówień używana do aktualizacji liczby zamówień dla metod płatności
-     * @return mapa obiektów {@link PaymentMethod} z kluczami będącymi identyfikatorami metod
-     * @throws IOException jeśli wystąpi błąd odczytu pliku
-     * @throws FileNotFoundException jeśli plik nie istnieje
+     * @param file the JSON file containing payment methods
+     * @param orders the list of orders used to update the order count for payment methods
+     * @return a map of {@link PaymentMethod} objects with keys being the method identifiers
+     * @throws IOException if a file read error occurs
+     * @throws FileNotFoundException if the file does not exist
      */
     public static Map<String, PaymentMethod> getPaymentsAsMap(File file, List<Order> orders) throws IOException {
         if (!file.exists()) {
-            throw new FileNotFoundException("Nie znaleziono pliku: " + file.getAbsolutePath());
+            throw new FileNotFoundException("File not found: " + file.getAbsolutePath());
         }
         if (!file.getName().toLowerCase().endsWith(".json")) {
-            throw new IllegalArgumentException("Podany plik nie jest plikiem z rozszerzeniem '.json': " + file.getAbsolutePath());
+            throw new IllegalArgumentException("The specified file is not a file with the extension '.json': " + file.getAbsolutePath());
         }
         if (file.length() == 0) {
             return new HashMap<>();

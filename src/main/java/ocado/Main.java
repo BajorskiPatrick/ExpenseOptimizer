@@ -12,17 +12,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Główna klasa aplikacji odpowiedzialna za uruchomienie procesu optymalizacji płatności.
+ * Main application class responsible for launching the payment optimization process.
  */
 public class Main {
     /**
-     * Główna metoda uruchamiająca aplikację.
+     * Main method launching the application.
      *
-     * @param args Argumenty wejściowe: ścieżki do plików JSON z zamówieniami i metodami płatności
+     * @param args Input arguments: paths to JSON files containing orders and payment methods
      */
     public static void main(String[] args) {
         if (args.length != 2) {
-            System.out.println("Musisz podac dwa argumenty: sciezki do plikow JSON");
+            System.out.println("You need to provide two arguments: paths to JSON files");
             return;
         }
         File ordersFile = new File(args[0]);
@@ -42,16 +42,16 @@ public class Main {
             System.err.println(e.getMessage());
             return;
         } catch (IOException e) {
-            System.err.println("Wyjatek przy odczycie pliku: " + e.getMessage());
+            System.err.println("Exception occurred while reading files " + e.getMessage());
             return;
         }
 
         if (orders.isEmpty()) {
-            System.out.println("W pliku json nie ma zadnych zamowien do oplacenia!");
+            System.out.println("There is no order to pay for in JSON file");
             return;
         }
         else if (payments.isEmpty()) {
-            System.out.println("W pliku json nie ma zdefiniowanych zadnych metod platnosci pomimo, ze podano zamowienia do oplacenia!");
+            System.out.println("There are no payment methods defined in the json file even though there are orders to pay for!");
             return;
         }
 
@@ -61,15 +61,15 @@ public class Main {
             result = optimizer.optimize();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("W trakcie wykonywania algorytmu nastapil wyjatek i algorytm zakonczyl działanie:");
+            System.out.println("While executing the algorithm, an exception occurred and the algorithm terminated:");
             System.err.println(e.getMessage());
             System.out.println();
             result = false;
         }
 
         if (result) {
-            System.out.println("Optymalizacja ukonczona pomyslnie\n");
-            System.out.println("-------Wyniki algorytmu-------");
+            System.out.println("Optimization finished successfully\n");
+            System.out.println("-------Algorithm result-------");
             if (pointsMethod.getId().equals("PUNKTY")) {
                 System.out.println(pointsMethod.printSpending());
             }
@@ -79,7 +79,7 @@ public class Main {
             System.out.println();
         }
         else {
-            System.out.println("Niestety, dla dostarczonych danych, algorytmowi nie udalo sie dojsc do rozwiazania :(");
+            System.out.println("Unfortunately, for the entered data, the algorithm was unable to reach a solution :(");
         }
     }
 }

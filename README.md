@@ -1,49 +1,38 @@
 # ExpenseOptimizer
 
-## Opis Zadania
-Celem projektu było opracowanie algorytmu, który dla zadanej listy 
-zamówień, dostępnych promocji oraz portfela klienta (metody płatności, 
-limity, rabaty) dobierze optymalny sposób płatności dla każdego 
-zamówienia. Algorytm dąży do maksymalizacji łącznego rabatu przy 
-jednoczesnym spełnieniu wszystkich ograniczeń (pełne opłacenie zamówień, 
-nieprzekraczanie limitów metod płatności). Dodatkowo algorytm 
-minimalizuje płatności kartami, preferując wydawanie punktów 
-lojalnościowych, jeśli nie zmniejsza to należnego rabatu.
+## Project Goal
+The aim of this project was to develop an algorithm that, for a given list of orders, available promotions, 
+and the customer's wallet (payment methods, limits, discounts), selects the optimal payment method for each order. 
+The algorithm strives to maximize the total discount while satisfying all constraints (full payment of orders, 
+not exceeding payment method limits). Additionally, the algorithm minimizes card payments, preferring to spend loyalty 
+points if it does not reduce the due discount.
 
-## Zasady Płatności i Rabatów
+## Payment and Discount Rules
 
-### Opcje Płatności za Zamówienie:
-Każde zamówienie można opłacić:
-1.  W całości za pomocą jednej tradycyjnej metody płatności (np. jedną kartą).
-2.  W całości punktami lojalnościowymi.
-3.  Częściowo punktami i częściowo jedną tradycyjną metodą płatności.
+### Order Payment Options:
+Each order can be paid:
+1.  In full using a single traditional payment method (e.g., one card).
+2.  In full using loyalty points.
+3.  Partially with points and partially with a single traditional payment method.
 
-### Rabaty:
-1.  **Rabaty Bankowe:**
-    *   Oferowane na podstawie umów z wybranymi bankami.
-    *   Aplikowane **tylko wtedy**, gdy zamówienie zostanie opłacone **w całości**
-        kartą konkretnego banku objętą promocją.
-    *   Każde zamówienie ma przypisany podzbiór promocji (metod płatności), które 
-        mogą być na nim zastosowane.
-    *   System nie wspiera rabatów bankowych przy częściowych płatnościach kartą.
-2.  **Rabaty za Punkty Lojalnościowe:**
-    *   **Płatność w całości punktami ("PUNKTY"):** Jeśli całe zamówienie jest 
-        opłacane punktami, stosowany jest rabat procentowy zdefiniowany dla 
-        metody "PUNKTY".
-    *   **Częściowa płatność punktami ("PUNKTY\_10"):** Jeśli klient opłaci **co 
-        najmniej 10% wartości zamówienia** (przed rabatem) punktami lojalnościowymi, 
-        sklep nalicza dodatkowy rabat w wysokości **10% na całe zamówienie**.
-        *   Zastosowanie tego rabatu wyklucza możliwość aplikacji dodatkowego rabatu 
-            przez użycie karty bankowej dla pozostałej części płatności.
-    *   Promocje za użycie punktów (PUNKTY i PUNKTY\_10) nie jest przypisana do 
-        zamówień i można ją zastosować zawsze (o ile spełnione są warunki).
+### Discounts:
+1.  **Bank Discounts:**
+    *   Offered based on agreements with selected banks.
+    *   Applied **only when** an order is paid **in full** with a specific bank card covered by the promotion.
+    *   Each order has an assigned subset of promotions (payment methods) that can be applied to it.
+    *   The system does not support bank discounts for partial card payments.
+2.  **Loyalty Point Discounts:**
+    *   **Full payment with points ("PUNKTY"):** If the entire order is paid with points, a percentage discount defined for the "PUNKTY" method is applied.
+    *   **Partial payment with points ("PUNKTY\_10"):** If the customer pays **at least 10% of the order value** (before discount) with loyalty points, the store applies an additional **10% discount on the entire order**.
+        *   Applying this discount excludes the possibility of applying an additional bank card discount for the remaining payment portion.
+    *   Promotions for using points (PUNKTY and PUNKTY\_10) are not assigned to specific orders and can always be applied (if their respective conditions are met).
 
-## Struktura Danych Wejściowych
+## Input Data Structure
 
-Aplikacja przyjmuje dwa pliki JSON jako argumenty wiersza poleceń:
+The application accepts two JSON files as command-line arguments:
 
-1.  **`orders.json`**: Lista zamówień (do 10000):
-    ```
+1.  **`orders.json`**: List of orders:
+    ```json
     [
         {"id": "ORDER1", "value": "100.00", "promotions": ["mZysk"]},
         {"id": "ORDER2", "value": "200.00", "promotions": ["BosBankrut"]},
@@ -51,81 +40,78 @@ Aplikacja przyjmuje dwa pliki JSON jako argumenty wiersza poleceń:
         {"id": "ORDER4", "value": "50.00"}
     ]
     ```
-    Gdzie:
-    *   `id`: Identyfikator zamówienia.
-    *   `value`: kwota zamówienia z dokładnością do dwóch miejsc po przecinku.
-    *   `promotions`: lista identyfikatorów promocji zależnych od metod płatności, które
-        mogą być zaaplikowane do tego zamówienia. Nazwy tych promocji są tożsame z
-        nazwami metod płatności.
-        * Lista ta jest opcjonalna, a gdy nie jest zdefiniowana, można stosować wyłącznie promocje za wydane punkty.
-        * Nawet kiedy karta z dostępnych metod płatności nie jest zdefiniowana w liście “promotions”, wciąż można jej 
-          użyć do opłacenia zamówienia. W takiej sytuacji nie można jedynie zastosować związanej z nią promocją.
+    Where:
+    *   `id`: Order identifier.
+    *   `value`: Order amount with precision to two decimal places.
+    *   `promotions`: A list of promotion identifiers linked to payment methods that can be applied to this order. The names of these promotions are identical to the payment method names.
+        *   This list is optional. If not defined, only point-based promotions can be applied.
+        *   Even if a card from the available payment methods is not defined in the `promotions` list for an order, it can still be used to pay for that order. However, its associated promotion cannot be applied in such a scenario.
 
-2.  **`paymentmethods.json`**: Lista posiadanych przez klienta metod płatności (do 1000):
-    ```
+2.  **`paymentmethods.json`**: List of payment methods owned by the customer:
+    ```json
     [
         {"id": "PUNKTY", "discount": "15", "limit": "100.00"},
         {"id": "mZysk", "discount": "10", "limit": "180.00"},
         {"id": "BosBankrut", "discount": "5", "limit": "200.00"}
     ]
     ```
-    Gdzie:
-    *   `id`: Nazwa metody płatności / promocji. Dla punktów lojalnościowych zawsze "PUNKTY".
-    *   `discount`: Liczba całkowita określająca procentowy rabat.
-    *   `limit`: Maksymalna kwota dostępna w danej metodzie płatności (z dokładnością do dwóch miejsc po przecinku).
+    Where:
+    *   `id`: Name of the payment method / promotion. Always "PUNKTY" for loyalty points.
+    *   `discount`: Integer representing the percentage discount.
+    *   `limit`: Maximum amount available in this payment method (with precision to two decimal places).
 
-## Opis Działania Algorytmu
+## Algorithm Description
 
-Algorytm jest wariacją podejścia zachłannego, iterującą po zamówieniach i starającą się wybrać dla każdego z nich najlepszą możliwą 
-opcję płatności pod kątem maksymalizacji rabatu, z uwzględnieniem zdefiniowanych heurystyk oraz predefiniowanych ograniczeń i priorytetów.
+The algorithm is a variation of a greedy approach, iterating through orders and trying to select the best possible payment 
+option for each to maximize the discount, considering defined heuristics, predefined constraints, and priorities.
 
-### Faza 1: Główna Optymalizacja Płatności
+### Phase 1: Main Payment Optimization
 
-1.  **Sortowanie Zamówień:** 
-    Zamówienia są sortowane malejąco według ich wartości (`value`).
-2.  **Iteracja po Zamówieniach:** Dla każdego zamówienia podejmowane są następujące kroki:
-    *  **Analiza Dostępnych Promocji:** Identyfikowane są wszystkie możliwe strategie płatności (pełna płatność kartą promocyjną, pełna płatność punktami "PUNKTY", częściowa płatność punktami "PUNKTY\_10") wraz z odpowiadającymi im rabatami procentowymi.
-    *  **Wybór Najlepszej Strategii:** Wybierana jest strategia dająca najwyższy procentowy upust.
-        *   **Brak remisu:** Jeśli jedna strategia jest wyraźnie najlepsza, zamówienie jest opłacane tą metodą.
-        *   **Obsługa Remisów:**
-            *   **Remis PEŁNE\_PUNKTY vs KARTA:** Zawsze wybierana jest opcja płatności punktami (zgodnie z priorytetem minimalizacji użycia kart, jeśli rabat jest ten sam).
-            *   **Remis KARTA vs KARTA (dwie różne karty dają identyczny rabat):**
-                1.  Wybierana jest karta, która jest przypisana jako promocja do mniejszej liczby pozostałych, nieopłaconych jeszcze zamówień (oszczędzanie "częstszych" promocji).
-                2.  W przypadku dalszego remisu, wybierana jest karta z mniejszym aktualnym limitem środków (oszczędzanie kart o większej pojemności).
-            *   **Remis PUNKTY\_10 vs KARTA (strategia częściowych punktów daje taki sam rabat jak pełna płatność kartą):**
-                1.  Zawsze wybierana jest strategia PUNKTY\_10 (priorytet dla punktów).
-                2.  **Wybór karty do dopłaty reszty:**
-                    *   **Jeśli istnieją karty z wystarczającym limitem płatności:** 
-                        *   Preferowana jest karta, która *nie jest* promocją dla żadnego innego nieopłaconego zamówienia ("bezpieczna karta"). Jeśli takich kart jest wiele, wybierana jest ta z mniejszym pozostałym limitem.
-                        *   Jeśli nie ma "bezpiecznych" kart, wybierana jest karta (spośród wszystkich zdefiniowanych), która ma najmniejszy rabat.
-                        *   W przypadku dalszych remisów przy wyborze karty do dopłaty stosowane są kryteria jak w remisie KARTA-KARTA (rzadkość w przyszłych promocjach, mniejszy limit).
-                    *   **Jeśli brak kart z wystarczającym limitem na standardową dopłatę PUNKTY\_10:** 
-                        * Algorytm próbuje znaleźć kartę z maksymalnym dostępnym limitem (który jest mniejszy niż wymagana dopłata) i jeśli jest ich wiele, wybiera najlepszą z nich według kryteriów zdefiniowanych powyżej w sekcji **Jeśli istnieją karty z wystarczającym limitem płatności**. 
-                        * Resztę (różnicę między wartością zamówienia po rabacie 10% a limitem wybranej karty) próbuje pokryć punktami.
-                        * W przypadku, gdy algorytm dojdzie do tego miejsca i pozostałych punktów nie wystarczy na dopłacenie pozostałej kwoty zamówienia, algorytm kończy działanie bez znalezienia rozwiązania -> doszedł do momentu, gdzie nie jest w stanie dobrać żadnej metody płatności do aktualnie przetwarzanego zamówienia 
+1.  **Sorting Orders:**
+    Orders are sorted in descending order by their `value`.
+2.  **Iterating Through Orders:** For each order, the following steps are taken:
+    *  **Analysis of Available Promotions:** All possible payment strategies are identified (full payment with a promotional card, full payment with "PUNKTY" points, partial payment with "PUNKTY\_10" points along with its 10% discount) along with their corresponding percentage discounts.
+    *  **Selection of the Best Strategy:** The strategy offering the highest percentage discount is chosen.
+        *   **No Tie:** If one strategy is clearly the best, the order is paid using this method.
+        *   **Tie Handling:**
+            *   **Tie: Full payment with "PUNKTY" vs. Card:** Payment with points ("PUNKTY") is always chosen (prioritizing minimizing card usage if the discount is the same).
+            *   **Tie: Card vs. Card (two different cards offer identical discounts):**
+                1.  The card assigned as a promotion to fewer remaining, unpaid orders is chosen (to save "more common" promotions for future orders).
+                2.  In case of a further tie, the card with the smaller current fund limit is chosen (to save cards with larger capacity).
+            *   **Tie: "PUNKTY\_10" vs. Card (partial points strategy yields the same discount as full card payment):**
+                1.  The "PUNKTY\_10" strategy is always chosen (priority for points).
+                2.  **Choosing a card for the remaining payment:**
+                    *   **If cards with sufficient payment limit exist:** 
+                        *   A card that is *not* a promotion for any other unpaid order ("safe card") is preferred. If there are multiple such cards, the one with the smaller remaining limit is chosen.
+                        *   If no "safe cards" are available, the card (from all defined cards) with the lowest discount is chosen.
+                        *   In case of further ties when choosing the top-up card, criteria similar to the Card vs. Card tie are applied (rarity in future promotions, smaller limit).
+                    *   **If no cards have a sufficient limit for the standard "PUNKTY\_10" top-up:** 
+                        * The algorithm tries to find a card with the maximum available limit (which is less than the required top-up amount). If there are multiple such cards, it selects the best one according to the criteria defined above in the "If cards with sufficient payment limit exist" section. 
+                        * The remainder (the difference between the order value after the 10% discount and the limit of the chosen card) is attempted to be covered by points.
+                        * If the algorithm reaches this point and the remaining points are insufficient to cover the remaining order amount, the algorithm terminates without finding a solution, as it has reached a point where it cannot select any payment method for the currently processed order.
 
-    c.  **Aktualizacja Stanu:** Po dokonaniu wyboru i opłaceniu zamówienia, aktualizowane są limity użytych metod płatności oraz wewnętrzny licznik `ordersAmount` dla kart promocyjnych (wskazujący, dla ilu jeszcze zamówień dana karta może stanowić promocję).
+    c.  **State Update:** After making a choice and paying for the order, the limits of the used payment methods and an internal `ordersAmount` counter for promotional cards (indicating for how many more orders a given card can be a promotion) are updated.
 
-### Faza 2: Wydawanie Pozostałych Punktów (Minimalizacja Płatności Kartami)
+### Phase 2: Spending Remaining Points (Minimizing Card Payments)
 
-Po przetworzeniu wszystkich zamówień w Fazie 1, jeśli klientowi pozostały niewykorzystane punkty lojalnościowe, algorytm próbuje je wydać:
+After processing all orders in Phase 1, if the customer has unused loyalty points, the algorithm attempts to spend them:
 
-1.  **Warunek:** Ta faza jest uruchamiana tylko, jeśli wszystkie zamówienia zostały opłacone w Fazie 1 i pozostały punkty.
-2.  **Iteracja Wsteczna:** Algorytm iteruje po zamówieniach w odwrotnej kolejności ich przetwarzania (od ostatnio opłaconego do pierwszego).
-3.  **Identyfikacja Kandydatów:** Szukane są zamówienia, które zostały opłacone z wykorzystaniem strategii PUNKTY\_10 (czyli częściowo punktami, częściowo kartą).
-4.  **Zastępowanie Płatności Karty płatnością Punktami:** Dla znalezionego zamówienia:
-    *   Określana jest kwota zapłacona kartą w ramach strategii PUNKTY\_10.
-    *   Algorytm "zwraca" na użytą kartę maksymalną możliwą kwotę (nie więcej niż pierwotnie nią zapłacono i nie więcej niż aktualnie dostępnych punktów).
-    *   Ta zwrócona kwota jest następnie "opłacana" z pozostałych punktów lojalnościowych.
-5.  **Zakończenie Fazy:** Proces jest kontynuowany, aż do wyczerpania wszystkich punktów lojalnościowych lub przejrzenia wszystkich zamówień.
+1.  **Condition:** This phase is triggered only if all orders were paid in Phase 1 and there are remaining points.
+2.  **Backward Iteration:** The algorithm iterates through orders in the reverse order of their processing (from the last paid to the first).
+3.  **Identifying Candidates:** It searches for orders that were paid using the "PUNKTY\_10" strategy (i.e., partially with points, partially with a card).
+4.  **Replacing Card Payment with Points Payment:** For a found order:
+    *   The amount paid by card under the "PUNKTY\_10" strategy is determined.
+    *   The algorithm "refunds" the maximum possible amount to the used card (not more than originally paid with it and not more than the currently available points).
+    *   This refunded amount is then "paid" using the remaining loyalty points.
+5.  **Phase Completion:** The process continues until all loyalty points are exhausted or all orders have been reviewed.
 
-### Wynik Działania Algorytmu
+### Algorithm Output
 
-Metoda `optimize()` zwraca:
-*   `true`: Jeśli udało się opłacić wszystkie zamówienia.
-*   `false`: Jeśli w trakcie przetwarzania algorytm napotkał zamówienie, którego nie można było opłacić żadną dostępną kombinacją metod płatności przy zachowaniu limitów.
+The `optimize()` method returns:
+*   `true`: If all orders were successfully paid.
+*   `false`: If, during processing, the algorithm encountered an order that could not be paid with any available combination of payment methods while respecting their limits.
 
-W przypadku, gdy metoda `optimize()` zwróci `true`, na standardowe wyjście zostaną wypisane statystyki dla każdej metody płatności w formie `<id_metody> <wydana_kwota>`, np.:
+If the `optimize()` method returns `true`, statistics for each payment method will be printed to standard output in the format `<payment_method_id> <amount_spent>`, e.g.:
 ```
 PUNKTY 150.0
 SuperKarta 150.0
@@ -133,9 +119,47 @@ ZwyklaKarta 0.0
 MegaBank 170.0
 ```
 
-## Uruchomienie Aplikacji
+## Running the Application with provided JAR file
 
-Aplikacja jest uruchamiana z linii poleceń za pomocą Javy 21:
+The application is run from the command line using Java 21:
 
 ```bash
-java -jar /sciezka/do/aplikacji/ExpenseOptimizer.jar /sciezka/do/orders.json /sciezka/do/paymentmethods.json
+java -jar /path/to/your/application/ExpenseOptimizer.jar /path/to/orders.json /path/to/paymentmethods.json
+```
+
+Replace `/path/to/your/application/ExpenseOptimizer.jar` with the actual path to your JAR file.\
+Replace `/path/to/orders.json` and `/path/to/paymentmethods.json` with the actual paths to your input JSON files.
+
+## Building and running the Application with Maven
+If you do not want to use provided JAR file, or you want to generate Javadoc documentation or Jacoco report,
+you need to use Maven building tool.
+
+### Building with Maven
+
+1.  Clone the repository or download the source code.
+2.  Navigate to the root directory of the project in your terminal.
+3.  Run the following Maven command to compile the code and package it into a JAR file:
+    ```bash
+    mvn clean package
+    ```
+4.  The executable JAR file will be created in the `target/` directory (e.g., `target/ExpenseOptimizer-1.0-SNAPSHOT.jar`).
+5.  You can now use this JAR file and rung application as described in `Running the Application with provided JAR file` section
+
+### Generating Javadoc
+
+To generate Javadoc for the project:
+1.  Ensure you have built the project at least once.
+2.  Run the following Maven command:
+    ```bash
+    mvn javadoc:javadoc
+    ```
+3.  The Javadoc HTML files will be generated in `target/site/apidocs/`. Open `index.html` in your browser to view the documentation.
+
+### Generating Jacoco Code Coverage Report
+
+To generate a code coverage report using Jacoco:
+1.  Run the following Maven command to execute tests and generate the report:
+    ```bash
+    mvn clean test jacoco:report
+    ```
+2.  The Jacoco report will be generated in `target/site/jacoco/`. Open `index.html` in your browser to view the coverage details.

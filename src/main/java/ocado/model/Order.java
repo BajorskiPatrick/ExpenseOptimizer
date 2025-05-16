@@ -10,29 +10,29 @@ import java.math.RoundingMode;
 import java.util.*;
 
 /**
- * Klasa reprezentująca zamówienie.
+ * Class representing an order.
  */
 @Getter
 @Setter
 public class Order {
-    /** Unikalny identyfikator zamówienia */
+    /** Unique order identifier */
     private String id;
 
-    /** Wartość zamówienia */
+    /** Order value */
     private BigDecimal value;
 
-    /** Lista identyfikatorów {@link PaymentMethod} dostępnych jako promocje dla zamówienia */
+    /** List of {@link PaymentMethod} identifiers available as promotions for the order */
     private final List<String> promotions = new ArrayList<>();
 
-    /** Mapa {@link PaymentMethod} wykorzystanych do opłacenia tego zamówienia, wraz z kwotami */
+    /** Map of {@link PaymentMethod} used to pay for this order, along with amounts */
     private final Map<String, BigDecimal> usedPaymentsMethods = new HashMap<>();
 
     /**
-     * Konstruktor używany przez Jackson do utworzenia obiekty z danych przekazanych w pliku JSON
+     * Constructor used by Jackson to create an object from JSON data.
      *
-     * @param id identyfikator zamówienia
-     * @param value wartość zamówienia, jako string z zaokrągleniem do 2 miejsc po przecinku
-     * @param promotions tablica string będąca listą identyfikatorów promocyjnych {@link PaymentMethod}
+     * @param id the order identifier
+     * @param value the order value as a string rounded to 2 decimal places
+     * @param promotions an array of strings representing the list of promotional {@link PaymentMethod} identifiers
      */
     @JsonCreator
     public Order(@JsonProperty("id") String id, @JsonProperty("value") String value, @JsonProperty("promotions") List<String> promotions) {
@@ -44,10 +44,10 @@ public class Order {
     }
 
     /**
-     * Dodaje informację o wykorzystanej metodzie płatności dla zamówienia.
+     * Adds information about the payment method used for the order.
      *
-     * @param method identyfikator {@link PaymentMethod}
-     * @param value kwota płatności
+     * @param method the {@link PaymentMethod} identifier
+     * @param value the payment amount
      */
     public void usePaymentsMethod(String method, BigDecimal value) {
         usedPaymentsMethods.put(method, value.setScale(2, RoundingMode.HALF_UP));
