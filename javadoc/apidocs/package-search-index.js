@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"ocado"},{"l":"ocado.model"},{"l":"ocado.optimization"},{"l":"ocado.utils"}];updateSearchResults();
